@@ -19,65 +19,40 @@ create table aoc_02
 
 \copy aoc_02 (direction, distance) from 'input' with delimiter E' '
 
-
-create or replace function step(
-    internal integer,
-    direction text,
-    distance integer,
-    aim integer
-) returns integer as $$
-    select
-        case
-            when direction = 'forward' then internal + (distance * aim)
-            else internal
-        end;
-$$ language sql;
-
-
-create or replace aggregate depth (text, integer, integer) (
-    sfunc = step,
-    stype = integer,
-    initcond = 0
+create type submarine as (
+    x int,
+    y int,
+    aim int
 );
 
-create or replace function addition (
-    internal point,
+
+create or replace function step(
+    s submarine,
     direction text,
     distance integer
-) returns point as $$
+) returns submarine as $$
     select
         case
-            when direction = 'forward' then internal + Point(distance, 0)
-            when direction = 'down' then internal + Point(0, distance)
-            when direction = 'up' then internal - Point(0, distance)
+            when direction = 'forward' then (s.x + distance, s.y, s.aim + distance * s.y)::submarine
+            when direction = 'down' then (s.x, s.y + distance, s.aim)::submarine
+            when direction = 'up' then (s.x, s.y - distance, s.aim)::submarine
         end;
 $$ language sql;
 
-
-create or replace aggregate my_sum (text, integer) (
-    sfunc = addition,
-    stype = point,
-    initcond = '(0, 0)'
+create or replace aggregate depth (text, integer) (
+    sfunc = step,
+    stype = submarine,
+    initcond = '(0, 0, 0)'
 );
 
 
 with result as (
-with coords_result as (
     select
-        id,
-        direction,
-        distance,
-        my_sum(direction, distance) over(order by id) as coords
+        depth(direction, distance) as sub
     from aoc_02
 )
 select
-    coords,
-    depth(direction, distance, coords[1]::int) over() as depth
-from coords_result
-order by id desc
-limit 1
-)
-select
-    coords[0] * coords[1] as part1,
-    depth * coords[0] as part2
+    (sub).x * (sub).y as part1,
+    (sub).x * (sub).aim as part2
 from result;
+    
