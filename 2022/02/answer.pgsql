@@ -16,46 +16,22 @@ with
           (
             select
               case
-                when elf_score = my_score then 0
-                when my_score - elf_score in (1, -2) then 1
-                when my_score - elf_score in (-1, 2) then -1
+                when mod(elf_score - my_score + 3, 3) = 2 then 6
+                when mod(elf_score - my_score + 3, 3) = 0 then 3
+                else 0
               end
-          ) as result_p1
+          ) + my_score as final_score_p1
         from
           scores
       )
     select
-      elf_score,
-      my_score,
-      result_p1,
+      final_score_p1,
       (
         select
           case
-            when result_p1 = 1 then 6
-            when result_p1 = 0 then 3
-            else 0
-          end
-      ) + my_score as final_score_p1,
-      (
-        select
-          case
-            when my_score = 1 then (
-              select
-                case
-                  when elf_score = 1 then 3
-                  when elf_score = 2 then 1
-                  when elf_score = 3 then 2
-                end
-            )
+            when my_score = 1 then mod(elf_score + 1, 3) + 1
             when my_score = 2 then 3 + elf_score
-            when my_score = 3 then 6 + (
-              select
-                case
-                  when elf_score = 1 then 2
-                  when elf_score = 2 then 3
-                  when elf_score = 3 then 1
-                end
-            )
+            when my_score = 3 then 6 + mod(elf_score, 3) + 1
           end
       ) as final_score_p2
     from
