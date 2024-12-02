@@ -20,11 +20,25 @@ with
       d01
   )
 select
-  sum(abs(value_left - value_right)) as answer_1
+  sum(abs(value_left - value_right)) as part_1
 from
   ordered_left
   left join ordered_right on (
     ordered_left.row_number_left = ordered_right.row_number_right
+  );
+
+with
+  appearances as (
+    select
+      d01.value_left,
+      count(t.value_right) as appearance_amount
+    from
+      d01
+      join d01 as t on d01.value_left = t.value_right
+    group by
+      d01.value_left
   )
-limit
-  10;
+select
+  sum(value_left * appearance_amount) as part_2
+from
+  appearances;
